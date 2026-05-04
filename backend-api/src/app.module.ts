@@ -36,6 +36,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { FileUploadModule } from './modules/file-upload/file-upload.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { PoliciesModule } from './modules/policies/policies.module';
+import { AiGatewayModule } from './modules/ai-gateway/ai-gateway.module';
 
 // Common
 import { JwtAuthGuard } from './modules/auth/guards';
@@ -91,6 +92,7 @@ import { RequestIdMiddleware } from './common/middleware';
     FileUploadModule,
     TenantsModule,
     PoliciesModule,
+    AiGatewayModule,
   ],
   providers: [
     // Global JWT auth guard
