@@ -32,6 +32,7 @@ model Tenant {
   policyLogs  PolicyLog[]
   aiLogs      AiLog[]
   apiKeys     ApiKey[]
+  documents   Document[]
 
   @@index([slug])
   @@index([isActive])
@@ -273,6 +274,51 @@ model PolicyLog {
   @@map("policy_logs")
 }
 
+// ─── RAG (Retrieval-Augmented Generation) ───────────────────────────────────────
+
+model Document {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  title         String
+  description   String?
+  fileName      String   @map("file_name")
+  fileType      String   @map("file_type")
+  fileSize      Int      @map("file_size")
+  storageKey    String   @map("storage_key")
+  status        DocumentStatus @default(PENDING)
+  totalChunks   Int      @default(0) @map("total_chunks")
+  errorMessage  String?  @map("error_message")
+  uploadedBy    String   @map("uploaded_by")
+  metadata      Json?
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  chunks        DocumentChunk[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([uploadedBy])
+  @@map("documents")
+}
+
+model DocumentChunk {
+  id            String   @id @default(uuid())
+  documentId    String   @map("document_id")
+  chunkIndex    Int      @map("chunk_index")
+  content       String
+  tokenCount    Int?     @map("token_count")
+  embedding     Unsupported("vector(1536)")?
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_chunks")
+}
+
 // ─── AI Gateway ─────────────────────────────────────────────────────────────────
 
 model AiLog {
@@ -355,6 +401,13 @@ enum PolicyAction {
   FLAG
   LOG
   RATE_LIMIT
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 enum AiRequestStatus {

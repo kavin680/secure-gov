@@ -37,6 +37,8 @@ import { FileUploadModule } from './modules/file-upload/file-upload.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { PoliciesModule } from './modules/policies/policies.module';
 import { AiGatewayModule } from './modules/ai-gateway/ai-gateway.module';
+import { RagModule } from './modules/rag/rag.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
 
 // Common
 import { JwtAuthGuard } from './modules/auth/guards';
@@ -93,6 +95,8 @@ import { RequestIdMiddleware } from './common/middleware';
     TenantsModule,
     PoliciesModule,
     AiGatewayModule,
+    RagModule,
+    MonitoringModule,
   ],
   providers: [
     // Global JWT auth guard

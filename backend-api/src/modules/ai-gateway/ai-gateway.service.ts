@@ -397,7 +397,7 @@ export class AiGatewayService {
     return iv.toString('hex') + ':' + encrypted;
   }
 
-  private decryptApiKey(encrypted: string): string {
+  decryptApiKey(encrypted: string): string {
     const secret =
       process.env.API_KEY_ENCRYPTION_SECRET ||
       'default-dev-secret-change-in-production';

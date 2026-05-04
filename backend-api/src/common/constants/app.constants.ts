@@ -37,6 +37,7 @@ export const APP_CONSTANTS = {
       'image/gif',
       'image/webp',
       'application/pdf',
+      'text/plain',
       'text/csv',
       'application/json',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
