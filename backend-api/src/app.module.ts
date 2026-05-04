@@ -34,10 +34,11 @@ import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { FileUploadModule } from './modules/file-upload/file-upload.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
 
 // Common
 import { JwtAuthGuard } from './modules/auth/guards';
-import { RolesGuard } from './common/guards';
+import { RolesGuard, TenantGuard } from './common/guards';
 import { GlobalExceptionFilter } from './common/filters';
 import { ResponseInterceptor, LoggingInterceptor } from './common/interceptors';
 import { RequestIdMiddleware } from './common/middleware';
@@ -87,12 +88,15 @@ import { RequestIdMiddleware } from './common/middleware';
     NotificationsModule,
     WebhooksModule,
     FileUploadModule,
+    TenantsModule,
   ],
   providers: [
     // Global JWT auth guard
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     // Global roles guard
     { provide: APP_GUARD, useClass: RolesGuard },
+    // Global tenant guard
+    { provide: APP_GUARD, useClass: TenantGuard },
     // Global throttler guard
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     // Global exception filter

@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   MinLength,
   Matches,
@@ -43,4 +44,9 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(Role)
   role?: Role;
+
+  @ApiPropertyOptional({ description: 'Tenant UUID to assign user to' })
+  @IsOptional()
+  @IsUUID()
+  tenantId?: string;
 }

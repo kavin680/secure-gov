@@ -4,3 +4,4 @@ export * from './public.decorator';
 export * from './current-user.decorator';
 export * from './audit.decorator';
 export * from './api-paginated-response.decorator';
+export * from './tenant-aware.decorator';

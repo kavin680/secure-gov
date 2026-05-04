@@ -27,6 +27,7 @@ export class UsersService {
     firstName: true,
     lastName: true,
     role: true,
+    tenantId: true,
     isActive: true,
     isEmailVerified: true,
     lastLoginAt: true,
@@ -36,7 +37,7 @@ export class UsersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: PaginationQueryDto) {
+  async findAll(query: PaginationQueryDto, tenantId?: string) {
     const { skip, take, orderBy } = buildPrismaQueryOptions(query);
     const searchFilter = buildSearchFilter(query.search, [
       'email',
@@ -45,7 +46,14 @@ export class UsersService {
     ]);
     const softDeleteFilter = buildSoftDeleteFilter();
 
-    const where = { ...softDeleteFilter, ...searchFilter };
+    const where: Record<string, unknown> = {
+      ...softDeleteFilter,
+      ...searchFilter,
+    };
+
+    if (tenantId) {
+      where.tenantId = tenantId;
+    }
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -92,6 +100,7 @@ export class UsersService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         role: dto.role,
+        tenantId: dto.tenantId,
         isEmailVerified: true,
       },
       select: this.userSelect,

@@ -7,6 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Tenant Model ───────────────────────────────────────────────────────────────
+
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  settings    Json?
+  maxUsers    Int      @default(50) @map("max_users")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  // Relations
+  users       User[]
+  auditLogs   AuditLog[]   @relation("TenantAuditLogs")
+  webhooks    Webhook[]
+  fileUploads FileUpload[]
+  notifications Notification[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("tenants")
+}
+
 // ─── Base User Model ───────────────────────────────────────────────────────────
 
 model User {
@@ -16,6 +43,7 @@ model User {
   firstName           String    @map("first_name")
   lastName            String    @map("last_name")
   role                Role      @default(USER)
+  tenantId            String?   @map("tenant_id")
   isActive            Boolean   @default(true) @map("is_active")
   isEmailVerified     Boolean   @default(false) @map("is_email_verified")
   emailVerificationToken String? @map("email_verification_token")
@@ -32,9 +60,11 @@ model User {
   deletedAt           DateTime? @map("deleted_at")
 
   // Relations
+  tenant              Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   sessions            Session[]
   auditLogs           AuditLog[] @relation("UserAuditLogs")
 
+  @@index([tenantId])
   @@map("users")
 }
 
@@ -67,6 +97,7 @@ model AuditLog {
   resource    String
   resourceId  String?  @map("resource_id")
   userId      String?  @map("user_id")
+  tenantId    String?  @map("tenant_id")
   requestId   String?  @map("request_id")
   description String?
   metadata    Json?
@@ -75,10 +106,12 @@ model AuditLog {
   createdAt   DateTime @default(now()) @map("created_at")
 
   user        User?    @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+  tenant      Tenant?  @relation("TenantAuditLogs", fields: [tenantId], references: [id], onDelete: SetNull)
 
   @@index([action])
   @@index([resource])
   @@index([userId])
+  @@index([tenantId])
   @@index([createdAt])
   @@map("audit_logs")
 }
@@ -104,6 +137,7 @@ model FeatureFlag {
 model Notification {
   id          String             @id @default(uuid())
   userId      String             @map("user_id")
+  tenantId    String?            @map("tenant_id")
   type        String
   title       String
   message     String
@@ -112,7 +146,10 @@ model Notification {
   readAt      DateTime?          @map("read_at")
   createdAt   DateTime           @default(now()) @map("created_at")
 
+  tenant      Tenant?            @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
   @@index([userId])
+  @@index([tenantId])
   @@index([isRead])
   @@index([createdAt])
   @@map("notifications")
@@ -126,6 +163,7 @@ model Webhook {
   url         String
   secret      String
   events      String[]
+  tenantId    String?  @map("tenant_id")
   isActive    Boolean  @default(true) @map("is_active")
   lastTriggeredAt DateTime? @map("last_triggered_at")
   failureCount Int     @default(0) @map("failure_count")
@@ -133,6 +171,9 @@ model Webhook {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
   @@index([isActive])
   @@map("webhooks")
 }
@@ -164,9 +205,13 @@ model FileUpload {
   storageKey  String   @map("storage_key")
   storageType String   @default("local") @map("storage_type")
   url         String?
+  tenantId    String?  @map("tenant_id")
   uploadedBy  String   @map("uploaded_by")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
   @@index([uploadedBy])
   @@index([storageKey])
   @@map("file_uploads")
@@ -177,5 +222,7 @@ model FileUpload {
 enum Role {
   USER
   ADMIN
+  TENANT_ADMIN
+  DEVELOPER
   SUPER_ADMIN
 }
