@@ -20,4 +20,12 @@ export enum Permission {
   TENANT_MANAGE_USERS = 'tenant:manage_users',
   TENANT_MANAGE_SETTINGS = 'tenant:manage_settings',
   TENANT_VIEW_AUDIT = 'tenant:view_audit',
+
+  // Policy permissions
+  POLICY_CREATE = 'policy:create',
+  POLICY_READ = 'policy:read',
+  POLICY_UPDATE = 'policy:update',
+  POLICY_DELETE = 'policy:delete',
+  POLICY_EVALUATE = 'policy:evaluate',
+  POLICY_VIEW_LOGS = 'policy:view_logs',
 }

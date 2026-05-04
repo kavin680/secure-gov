@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, PolicyType, PolicyAction } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -169,6 +169,131 @@ async function main() {
     },
   });
   console.log(`Test User created: ${testUser.email}`);
+
+  // ─── Create Demo Policies for Acme ─────────────────────────────────────────
+
+  await prisma.policy.deleteMany({ where: { tenantId: tenantAcme.id } });
+
+  const keywordPolicy = await prisma.policy.create({
+    data: {
+      tenantId: tenantAcme.id,
+      name: 'Block Sensitive Keywords',
+      description:
+        'Blocks prompts containing sensitive keywords like passwords, SSN, credit card numbers',
+      type: PolicyType.KEYWORD_BLOCK,
+      action: PolicyAction.DENY,
+      priority: 100,
+      rules: {
+        keywords: [
+          'password',
+          'ssn',
+          'social security',
+          'credit card number',
+          'secret key',
+          'api key',
+        ],
+        caseSensitive: false,
+      },
+      createdBy: acmeAdmin.id,
+    },
+  });
+  console.log(`Policy created: ${keywordPolicy.name} (Acme Corp)`);
+
+  const modelPolicy = await prisma.policy.create({
+    data: {
+      tenantId: tenantAcme.id,
+      name: 'Restrict AI Models',
+      description: 'Only allow approved AI models for this tenant',
+      type: PolicyType.MODEL_RESTRICT,
+      action: PolicyAction.DENY,
+      priority: 90,
+      rules: {
+        allowedModels: ['gpt-4o-mini', 'gpt-4o'],
+      },
+      createdBy: acmeAdmin.id,
+    },
+  });
+  console.log(`Policy created: ${modelPolicy.name} (Acme Corp)`);
+
+  const topicPolicy = await prisma.policy.create({
+    data: {
+      tenantId: tenantAcme.id,
+      name: 'Block Harmful Topics',
+      description: 'Blocks prompts related to harmful or unethical topics',
+      type: PolicyType.TOPIC_RESTRICT,
+      action: PolicyAction.DENY,
+      priority: 80,
+      rules: {
+        blockedTopics: ['hack', 'exploit', 'malware', 'ransomware', 'phishing'],
+        caseSensitive: false,
+      },
+      createdBy: acmeAdmin.id,
+    },
+  });
+  console.log(`Policy created: ${topicPolicy.name} (Acme Corp)`);
+
+  const sensitiveDataPolicy = await prisma.policy.create({
+    data: {
+      tenantId: tenantAcme.id,
+      name: 'Detect Sensitive Data Patterns',
+      description:
+        'Flags prompts containing patterns matching SSN, email, or phone numbers',
+      type: PolicyType.SENSITIVE_DATA,
+      action: PolicyAction.FLAG,
+      priority: 70,
+      rules: {
+        patterns: [
+          '\\b\\d{3}-\\d{2}-\\d{4}\\b',
+          '\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b',
+          '\\b\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}\\b',
+        ],
+      },
+      createdBy: acmeAdmin.id,
+    },
+  });
+  console.log(`Policy created: ${sensitiveDataPolicy.name} (Acme Corp)`);
+
+  // ─── Create Demo Policies for GlobeTech ────────────────────────────────────
+
+  await prisma.policy.deleteMany({ where: { tenantId: tenantGlobetech.id } });
+
+  const gtKeywordPolicy = await prisma.policy.create({
+    data: {
+      tenantId: tenantGlobetech.id,
+      name: 'Block Confidential Keywords',
+      description: 'Blocks prompts containing confidential business terms',
+      type: PolicyType.KEYWORD_BLOCK,
+      action: PolicyAction.DENY,
+      priority: 100,
+      rules: {
+        keywords: [
+          'confidential',
+          'trade secret',
+          'proprietary',
+          'internal only',
+        ],
+        caseSensitive: false,
+      },
+      createdBy: globetechAdmin.id,
+    },
+  });
+  console.log(`Policy created: ${gtKeywordPolicy.name} (GlobeTech)`);
+
+  const gtModelPolicy = await prisma.policy.create({
+    data: {
+      tenantId: tenantGlobetech.id,
+      name: 'GlobeTech Model Restrictions',
+      description: 'GlobeTech only allows gpt-4o-mini',
+      type: PolicyType.MODEL_RESTRICT,
+      action: PolicyAction.DENY,
+      priority: 90,
+      rules: {
+        allowedModels: ['gpt-4o-mini'],
+      },
+      createdBy: globetechAdmin.id,
+    },
+  });
+  console.log(`Policy created: ${gtModelPolicy.name} (GlobeTech)`);
 
   console.log('Seeding completed.');
 }

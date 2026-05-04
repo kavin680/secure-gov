@@ -28,6 +28,8 @@ model Tenant {
   webhooks    Webhook[]
   fileUploads FileUpload[]
   notifications Notification[]
+  policies    Policy[]
+  policyLogs  PolicyLog[]
 
   @@index([slug])
   @@index([isActive])
@@ -217,6 +219,58 @@ model FileUpload {
   @@map("file_uploads")
 }
 
+// ─── Policies ──────────────────────────────────────────────────────────────────
+
+model Policy {
+  id          String       @id @default(uuid())
+  tenantId    String       @map("tenant_id")
+  name        String
+  description String?
+  type        PolicyType
+  rules       Json
+  action      PolicyAction @default(DENY)
+  priority    Int          @default(0)
+  isActive    Boolean      @default(true) @map("is_active")
+  createdBy   String?      @map("created_by")
+
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  policyLogs  PolicyLog[]
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([isActive])
+  @@index([priority])
+  @@map("policies")
+}
+
+model PolicyLog {
+  id            String   @id @default(uuid())
+  policyId      String   @map("policy_id")
+  tenantId      String   @map("tenant_id")
+  userId        String?  @map("user_id")
+  action        String
+  decision      String
+  requestPath   String?  @map("request_path")
+  requestMethod String?  @map("request_method")
+  prompt        String?
+  matchedRule   Json?    @map("matched_rule")
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  policy        Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([decision])
+  @@index([createdAt])
+  @@map("policy_logs")
+}
+
 // ─── Enums ──────────────────────────────────────────────────────────────────────
 
 enum Role {
@@ -225,4 +279,22 @@ enum Role {
   TENANT_ADMIN
   DEVELOPER
   SUPER_ADMIN
+}
+
+enum PolicyType {
+  KEYWORD_BLOCK
+  RATE_LIMIT
+  MODEL_RESTRICT
+  TOPIC_RESTRICT
+  SENSITIVE_DATA
+  USAGE_QUOTA
+  CUSTOM
+}
+
+enum PolicyAction {
+  ALLOW
+  DENY
+  FLAG
+  LOG
+  RATE_LIMIT
 }

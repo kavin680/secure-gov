@@ -1,0 +1,25 @@
+export enum PolicyType {
+  KEYWORD_BLOCK = 'KEYWORD_BLOCK',
+  RATE_LIMIT = 'RATE_LIMIT',
+  MODEL_RESTRICT = 'MODEL_RESTRICT',
+  TOPIC_RESTRICT = 'TOPIC_RESTRICT',
+  SENSITIVE_DATA = 'SENSITIVE_DATA',
+  USAGE_QUOTA = 'USAGE_QUOTA',
+  CUSTOM = 'CUSTOM',
+}
+
+export enum PolicyAction {
+  ALLOW = 'ALLOW',
+  DENY = 'DENY',
+  FLAG = 'FLAG',
+  LOG = 'LOG',
+  RATE_LIMIT = 'RATE_LIMIT',
+}
+
+export enum PolicyDecision {
+  ALLOWED = 'ALLOWED',
+  DENIED = 'DENIED',
+  FLAGGED = 'FLAGGED',
+  LOGGED = 'LOGGED',
+  RATE_LIMITED = 'RATE_LIMITED',
+}
