@@ -8,66 +8,32 @@ import {
 } from '@nestjs/swagger';
 import { AuditService } from './audit.service';
 import { AuditQueryDto } from './dto';
-import { Roles } from '../../common/decorators';
+import { Roles, CurrentUser } from '../../common/decorators';
 import { Role } from '../../common/enums';
+import type { JwtPayload } from '../../common/interfaces';
 
 @ApiTags('Audit')
 @ApiBearerAuth()
 @Controller('audit')
-@Roles(Role.ADMIN, Role.SUPER_ADMIN)
+@Roles(Role.ADMIN, Role.SUPER_ADMIN, Role.TENANT_ADMIN)
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get audit logs (Admin)' })
+  @ApiOperation({ summary: 'Get audit logs (Admin/Tenant Admin)' })
   @ApiResponse({
     status: 200,
     description: 'Paginated list of audit logs',
-    schema: {
-      example: {
-        success: true,
-        statusCode: 200,
-        message: 'Success',
-        data: [
-          {
-            id: 'clx...',
-            action: 'CREATE',
-            resource: 'User',
-            resourceId: 'clx...',
-            description: 'User created',
-            userId: 'clx...',
-            requestId: 'a1b2c3d4-...',
-            ipAddress: '127.0.0.1',
-            userAgent: 'Mozilla/5.0...',
-            createdAt: '2024-01-01T00:00:00.000Z',
-            user: {
-              id: 'clx...',
-              email: 'admin@enterprise.com',
-              firstName: 'Admin',
-              lastName: 'User',
-            },
-          },
-        ],
-        meta: {
-          page: 1,
-          limit: 20,
-          total: 1,
-          totalPages: 1,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-        requestId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        timestamp: '2024-01-01T00:00:00.000Z',
-      },
-    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - requires ADMIN or SUPER_ADMIN role',
+    description:
+      'Forbidden - requires ADMIN, SUPER_ADMIN, or TENANT_ADMIN role',
   })
-  findAll(@Query() query: AuditQueryDto) {
-    return this.auditService.findAll(query);
+  findAll(@Query() query: AuditQueryDto, @CurrentUser() user: JwtPayload) {
+    const tenantId = user.role === Role.SUPER_ADMIN ? undefined : user.tenantId;
+    return this.auditService.findAll(query, tenantId);
   }
 
   @Get(':id')

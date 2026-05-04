@@ -7,6 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Tenant Model ───────────────────────────────────────────────────────────────
+
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  settings    Json?
+  maxUsers    Int      @default(50) @map("max_users")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  // Relations
+  users       User[]
+  auditLogs   AuditLog[]   @relation("TenantAuditLogs")
+  webhooks    Webhook[]
+  fileUploads FileUpload[]
+  notifications Notification[]
+  policies    Policy[]
+  policyLogs  PolicyLog[]
+  aiLogs      AiLog[]
+  apiKeys     ApiKey[]
+  documents   Document[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("tenants")
+}
+
 // ─── Base User Model ───────────────────────────────────────────────────────────
 
 model User {
@@ -16,6 +48,7 @@ model User {
   firstName           String    @map("first_name")
   lastName            String    @map("last_name")
   role                Role      @default(USER)
+  tenantId            String?   @map("tenant_id")
   isActive            Boolean   @default(true) @map("is_active")
   isEmailVerified     Boolean   @default(false) @map("is_email_verified")
   emailVerificationToken String? @map("email_verification_token")
@@ -32,9 +65,11 @@ model User {
   deletedAt           DateTime? @map("deleted_at")
 
   // Relations
+  tenant              Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   sessions            Session[]
   auditLogs           AuditLog[] @relation("UserAuditLogs")
 
+  @@index([tenantId])
   @@map("users")
 }
 
@@ -67,6 +102,7 @@ model AuditLog {
   resource    String
   resourceId  String?  @map("resource_id")
   userId      String?  @map("user_id")
+  tenantId    String?  @map("tenant_id")
   requestId   String?  @map("request_id")
   description String?
   metadata    Json?
@@ -75,10 +111,12 @@ model AuditLog {
   createdAt   DateTime @default(now()) @map("created_at")
 
   user        User?    @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+  tenant      Tenant?  @relation("TenantAuditLogs", fields: [tenantId], references: [id], onDelete: SetNull)
 
   @@index([action])
   @@index([resource])
   @@index([userId])
+  @@index([tenantId])
   @@index([createdAt])
   @@map("audit_logs")
 }
@@ -104,6 +142,7 @@ model FeatureFlag {
 model Notification {
   id          String             @id @default(uuid())
   userId      String             @map("user_id")
+  tenantId    String?            @map("tenant_id")
   type        String
   title       String
   message     String
@@ -112,7 +151,10 @@ model Notification {
   readAt      DateTime?          @map("read_at")
   createdAt   DateTime           @default(now()) @map("created_at")
 
+  tenant      Tenant?            @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
   @@index([userId])
+  @@index([tenantId])
   @@index([isRead])
   @@index([createdAt])
   @@map("notifications")
@@ -126,6 +168,7 @@ model Webhook {
   url         String
   secret      String
   events      String[]
+  tenantId    String?  @map("tenant_id")
   isActive    Boolean  @default(true) @map("is_active")
   lastTriggeredAt DateTime? @map("last_triggered_at")
   failureCount Int     @default(0) @map("failure_count")
@@ -133,6 +176,9 @@ model Webhook {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
   @@index([isActive])
   @@map("webhooks")
 }
@@ -164,12 +210,169 @@ model FileUpload {
   storageKey  String   @map("storage_key")
   storageType String   @default("local") @map("storage_type")
   url         String?
+  tenantId    String?  @map("tenant_id")
   uploadedBy  String   @map("uploaded_by")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
   @@index([uploadedBy])
   @@index([storageKey])
   @@map("file_uploads")
+}
+
+// ─── Policies ──────────────────────────────────────────────────────────────────
+
+model Policy {
+  id          String       @id @default(uuid())
+  tenantId    String       @map("tenant_id")
+  name        String
+  description String?
+  type        PolicyType
+  rules       Json
+  action      PolicyAction @default(DENY)
+  priority    Int          @default(0)
+  isActive    Boolean      @default(true) @map("is_active")
+  createdBy   String?      @map("created_by")
+
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  policyLogs  PolicyLog[]
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([isActive])
+  @@index([priority])
+  @@map("policies")
+}
+
+model PolicyLog {
+  id            String   @id @default(uuid())
+  policyId      String   @map("policy_id")
+  tenantId      String   @map("tenant_id")
+  userId        String?  @map("user_id")
+  action        String
+  decision      String
+  requestPath   String?  @map("request_path")
+  requestMethod String?  @map("request_method")
+  prompt        String?
+  matchedRule   Json?    @map("matched_rule")
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  policy        Policy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([decision])
+  @@index([createdAt])
+  @@map("policy_logs")
+}
+
+// ─── RAG (Retrieval-Augmented Generation) ───────────────────────────────────────
+
+model Document {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  title         String
+  description   String?
+  fileName      String   @map("file_name")
+  fileType      String   @map("file_type")
+  fileSize      Int      @map("file_size")
+  storageKey    String   @map("storage_key")
+  status        DocumentStatus @default(PENDING)
+  totalChunks   Int      @default(0) @map("total_chunks")
+  errorMessage  String?  @map("error_message")
+  uploadedBy    String   @map("uploaded_by")
+  metadata      Json?
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  chunks        DocumentChunk[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([uploadedBy])
+  @@map("documents")
+}
+
+model DocumentChunk {
+  id            String   @id @default(uuid())
+  documentId    String   @map("document_id")
+  chunkIndex    Int      @map("chunk_index")
+  content       String
+  tokenCount    Int?     @map("token_count")
+  embedding     Unsupported("vector(1536)")?
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_chunks")
+}
+
+// ─── AI Gateway ─────────────────────────────────────────────────────────────────
+
+model AiLog {
+  id              String    @id @default(uuid())
+  tenantId        String    @map("tenant_id")
+  userId          String?   @map("user_id")
+  provider        String
+  model           String
+  prompt          String
+  response        String?
+  systemPrompt    String?   @map("system_prompt")
+  promptTokens    Int?      @map("prompt_tokens")
+  completionTokens Int?     @map("completion_tokens")
+  totalTokens     Int?      @map("total_tokens")
+  latencyMs       Int?      @map("latency_ms")
+  status          AiRequestStatus @default(PENDING)
+  errorMessage    String?   @map("error_message")
+  policyDecision  String?   @map("policy_decision")
+  policyId        String?   @map("policy_id")
+  metadata        Json?
+  cost            Float?
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([provider])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ai_logs")
+}
+
+model ApiKey {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  provider    String
+  keyHash     String   @map("key_hash")
+  keyPrefix   String   @map("key_prefix")
+  isActive    Boolean  @default(true) @map("is_active")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdBy   String   @map("created_by")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, provider])
+  @@index([tenantId])
+  @@index([isActive])
+  @@map("api_keys")
 }
 
 // ─── Enums ──────────────────────────────────────────────────────────────────────
@@ -177,5 +380,40 @@ model FileUpload {
 enum Role {
   USER
   ADMIN
+  TENANT_ADMIN
+  DEVELOPER
   SUPER_ADMIN
+}
+
+enum PolicyType {
+  KEYWORD_BLOCK
+  RATE_LIMIT
+  MODEL_RESTRICT
+  TOPIC_RESTRICT
+  SENSITIVE_DATA
+  USAGE_QUOTA
+  CUSTOM
+}
+
+enum PolicyAction {
+  ALLOW
+  DENY
+  FLAG
+  LOG
+  RATE_LIMIT
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AiRequestStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  DENIED
+  RATE_LIMITED
 }

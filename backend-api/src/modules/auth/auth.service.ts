@@ -113,6 +113,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role as Role,
+      tenantId: user.tenantId ?? undefined,
     });
 
     // Transaction: reset login attempts + create session atomically
@@ -151,6 +152,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        tenantId: user.tenantId,
       },
     };
   }
@@ -185,6 +187,7 @@ export class AuthService {
             id: true,
             email: true,
             role: true,
+            tenantId: true,
             isActive: true,
             deletedAt: true,
           },
@@ -200,6 +203,7 @@ export class AuthService {
       sub: session.user.id,
       email: session.user.email,
       role: session.user.role as Role,
+      tenantId: session.user.tenantId ?? undefined,
     });
 
     // Transaction: revoke old session + create new session atomically
@@ -378,11 +382,15 @@ export class AuthService {
   }
 
   private async generateTokens(payload: JwtPayload) {
-    const tokenPayload = {
+    const tokenPayload: Record<string, unknown> = {
       sub: payload.sub,
       email: payload.email,
       role: payload.role,
     };
+
+    if (payload.tenantId) {
+      tokenPayload.tenantId = payload.tenantId;
+    }
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(tokenPayload, {

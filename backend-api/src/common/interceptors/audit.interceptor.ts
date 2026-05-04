@@ -33,6 +33,7 @@ export class AuditInterceptor implements NestInterceptor {
 
     const request = context.switchToHttp().getRequest();
     const userId = request.user?.sub;
+    const tenantId = request.user?.tenantId;
     const requestId = request.requestId;
 
     return next.handle().pipe(
@@ -44,6 +45,7 @@ export class AuditInterceptor implements NestInterceptor {
               resource: auditMetadata.resource,
               resourceId: request.params?.id,
               userId,
+              tenantId,
               requestId,
               description: auditMetadata.description,
               metadata: {

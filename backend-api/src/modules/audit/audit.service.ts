@@ -20,6 +20,7 @@ export class AuditService {
           resource: dto.resource,
           resourceId: dto.resourceId,
           userId: dto.userId,
+          tenantId: dto.tenantId,
           requestId: dto.requestId,
           description: dto.description,
           metadata: dto.metadata ? (dto.metadata as object) : undefined,
@@ -32,13 +33,14 @@ export class AuditService {
     }
   }
 
-  async findAll(query: AuditQueryDto) {
+  async findAll(query: AuditQueryDto, tenantId?: string) {
     const { skip, take, orderBy } = buildPrismaQueryOptions(query);
 
     const where: Record<string, unknown> = {};
     if (query.action) where.action = query.action;
     if (query.resource) where.resource = query.resource;
     if (query.userId) where.userId = query.userId;
+    if (tenantId) where.tenantId = tenantId;
 
     const [logs, total] = await Promise.all([
       this.prisma.auditLog.findMany({

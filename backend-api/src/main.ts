@@ -67,6 +67,8 @@ async function bootstrap() {
       .addBearerAuth()
       .addTag('Auth', 'Authentication & Authorization')
       .addTag('Users', 'User Management')
+      .addTag('Tenants', 'Tenant Management')
+      .addTag('Policies', 'Policy Engine & Enforcement')
       .addTag('Health', 'Health Checks')
       .addTag('Audit', 'Audit Logs')
       .addTag('Feature Flags', 'Feature Flag Management')

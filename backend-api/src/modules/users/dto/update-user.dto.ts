@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 import { Role } from '../../../common/enums';
@@ -30,4 +31,9 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Tenant UUID to assign user to' })
+  @IsOptional()
+  @IsUUID()
+  tenantId?: string;
 }

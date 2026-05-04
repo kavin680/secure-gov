@@ -5,6 +5,7 @@ export interface CreateAuditLogDto {
   resource: string;
   resourceId?: string;
   userId?: string;
+  tenantId?: string;
   requestId?: string;
   description?: string;
   metadata?: Record<string, unknown>;

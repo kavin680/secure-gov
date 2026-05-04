@@ -18,8 +18,9 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { PaginationQueryDto } from '../../common/dtos';
-import { Roles } from '../../common/decorators';
+import { Roles, CurrentUser } from '../../common/decorators';
 import { Role } from '../../common/enums';
+import type { JwtPayload } from '../../common/interfaces';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -28,81 +29,28 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Get all users (Admin)' })
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN, Role.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Get all users (Admin/Tenant Admin)' })
   @ApiResponse({
     status: 200,
     description: 'Paginated list of users',
-    schema: {
-      example: {
-        success: true,
-        statusCode: 200,
-        message: 'Success',
-        data: [
-          {
-            id: 'clx...',
-            email: 'john@example.com',
-            firstName: 'John',
-            lastName: 'Doe',
-            role: 'USER',
-            isActive: true,
-            isEmailVerified: true,
-            lastLoginAt: '2024-01-01T00:00:00.000Z',
-            createdAt: '2024-01-01T00:00:00.000Z',
-            updatedAt: '2024-01-01T00:00:00.000Z',
-          },
-        ],
-        meta: {
-          page: 1,
-          limit: 20,
-          total: 1,
-          totalPages: 1,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-        requestId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        timestamp: '2024-01-01T00:00:00.000Z',
-      },
-    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - requires ADMIN or SUPER_ADMIN role',
+    description:
+      'Forbidden - requires ADMIN, SUPER_ADMIN, or TENANT_ADMIN role',
   })
-  findAll(@Query() query: PaginationQueryDto) {
-    return this.usersService.findAll(query);
+  findAll(@Query() query: PaginationQueryDto, @CurrentUser() user: JwtPayload) {
+    const tenantId = user.role === Role.SUPER_ADMIN ? undefined : user.tenantId;
+    return this.usersService.findAll(query, tenantId);
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN, Role.TENANT_ADMIN)
   @ApiOperation({ summary: 'Get user by ID (Admin)' })
   @ApiParam({ name: 'id', description: 'User UUID' })
-  @ApiResponse({
-    status: 200,
-    description: 'User details',
-    schema: {
-      example: {
-        success: true,
-        statusCode: 200,
-        message: 'Success',
-        data: {
-          id: 'clx...',
-          email: 'john@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          role: 'USER',
-          isActive: true,
-          isEmailVerified: true,
-          lastLoginAt: null,
-          createdAt: '2024-01-01T00:00:00.000Z',
-          updatedAt: '2024-01-01T00:00:00.000Z',
-        },
-        requestId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        timestamp: '2024-01-01T00:00:00.000Z',
-      },
-    },
-  })
+  @ApiResponse({ status: 200, description: 'User details' })
   @ApiResponse({ status: 404, description: 'User not found' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -123,7 +71,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN, Role.TENANT_ADMIN)
   @ApiOperation({ summary: 'Update user (Admin)' })
   @ApiParam({ name: 'id', description: 'User UUID' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
