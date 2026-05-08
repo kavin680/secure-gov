@@ -91,6 +91,9 @@ export class WebhooksService {
     }
   }
 
+  private static readonly MAX_RETRIES = 3;
+  private static readonly RETRY_BASE_DELAY_MS = 1000;
+
   private async deliverWebhook(
     webhookId: string,
     url: string,
@@ -108,56 +111,82 @@ export class WebhooksService {
       .update(body)
       .digest('hex');
 
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Webhook-Signature': signature,
-          'X-Webhook-Event': event,
-        },
-        body,
-        signal: AbortSignal.timeout(APP_CONSTANTS.WEBHOOKS.DELIVERY_TIMEOUT_MS),
-      });
+    let lastError: Error | null = null;
 
-      await this.prisma.webhookLog.create({
-        data: {
-          webhookId,
-          event,
-          payload,
-          statusCode: response.status,
-          success: response.ok,
-          response: await response.text().catch(() => null),
-        },
-      });
+    for (let attempt = 0; attempt <= WebhooksService.MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        const delay =
+          WebhooksService.RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        this.logger.log(
+          `Retrying webhook ${webhookId} to ${url} (attempt ${attempt + 1}/${WebhooksService.MAX_RETRIES + 1})`,
+        );
+      }
 
-      await this.prisma.webhook.update({
-        where: { id: webhookId },
-        data: {
-          lastTriggeredAt: new Date(),
-          failureCount: response.ok ? 0 : { increment: 1 },
-        },
-      });
-    } catch (error) {
-      this.logger.error(
-        `Webhook delivery failed for ${url}: ${(error as Error).message}`,
-      );
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Webhook-Signature': signature,
+            'X-Webhook-Event': event,
+            'X-Webhook-Attempt': String(attempt + 1),
+          },
+          body,
+          signal: AbortSignal.timeout(
+            APP_CONSTANTS.WEBHOOKS.DELIVERY_TIMEOUT_MS,
+          ),
+        });
 
-      await this.prisma.webhookLog.create({
-        data: {
-          webhookId,
-          event,
-          payload,
-          success: false,
-          error: (error as Error).message,
-        },
-      });
+        await this.prisma.webhookLog.create({
+          data: {
+            webhookId,
+            event,
+            payload,
+            statusCode: response.status,
+            success: response.ok,
+            response: await response.text().catch(() => null),
+          },
+        });
 
-      await this.prisma.webhook.update({
-        where: { id: webhookId },
-        data: { failureCount: { increment: 1 } },
-      });
+        if (response.ok) {
+          await this.prisma.webhook.update({
+            where: { id: webhookId },
+            data: {
+              lastTriggeredAt: new Date(),
+              failureCount: 0,
+            },
+          });
+          return;
+        }
+
+        lastError = new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        lastError = error as Error;
+        this.logger.warn(
+          `Webhook delivery attempt ${attempt + 1} failed for ${url}: ${lastError.message}`,
+        );
+      }
     }
+
+    this.logger.error(
+      `Webhook delivery failed after ${WebhooksService.MAX_RETRIES + 1} attempts for ${url}: ${lastError?.message}`,
+    );
+
+    await this.prisma.webhookLog.create({
+      data: {
+        webhookId,
+        event,
+        payload,
+        success: false,
+        error: `Failed after ${WebhooksService.MAX_RETRIES + 1} attempts: ${lastError?.message}`,
+      },
+    });
+
+    await this.prisma.webhook.update({
+      where: { id: webhookId },
+      data: { failureCount: { increment: 1 } },
+    });
   }
 
   async getLogs(webhookId: string, query: PaginationQueryDto) {
