@@ -16,7 +16,7 @@ import { RagChatDto } from './dto';
 import {
   DOCUMENT_PROCESSING_QUEUE,
   DocumentProcessingJobData,
-} from './document-processing.processor';
+} from './document-processing.constants';
 
 export interface DocumentUploadParams {
   title: string;

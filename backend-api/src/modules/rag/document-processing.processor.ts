@@ -1,20 +1,20 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
+import { Inject, Logger, forwardRef } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { RagService } from './rag.service';
-
-export const DOCUMENT_PROCESSING_QUEUE = 'document-processing';
-
-export interface DocumentProcessingJobData {
-  documentId: string;
-  tenantId: string;
-}
+import {
+  DOCUMENT_PROCESSING_QUEUE,
+  DocumentProcessingJobData,
+} from './document-processing.constants';
 
 @Processor(DOCUMENT_PROCESSING_QUEUE)
 export class DocumentProcessingProcessor extends WorkerHost {
   private readonly logger = new Logger(DocumentProcessingProcessor.name);
 
-  constructor(private readonly ragService: RagService) {
+  constructor(
+    @Inject(forwardRef(() => RagService))
+    private readonly ragService: RagService,
+  ) {
     super();
   }
 

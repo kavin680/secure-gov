@@ -5,10 +5,8 @@ import { RagService } from './rag.service';
 import { DocumentProcessingService } from './document-processing.service';
 import { EmbeddingService } from './embedding.service';
 import { AiGatewayModule } from '../ai-gateway/ai-gateway.module';
-import {
-  DocumentProcessingProcessor,
-  DOCUMENT_PROCESSING_QUEUE,
-} from './document-processing.processor';
+import { DocumentProcessingProcessor } from './document-processing.processor';
+import { DOCUMENT_PROCESSING_QUEUE } from './document-processing.constants';
 
 @Module({
   imports: [
