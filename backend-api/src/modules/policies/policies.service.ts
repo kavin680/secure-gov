@@ -83,7 +83,7 @@ export class PoliciesService {
         name: dto.name,
         description: dto.description,
         type: dto.type,
-        rules: dto.rules,
+        rules: dto.rules as object,
         action: dto.action,
         priority: dto.priority,
         isActive: dto.isActive ?? true,
