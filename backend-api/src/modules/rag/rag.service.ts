@@ -5,12 +5,18 @@ import {
   BadRequestException,
   OnModuleInit,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../../database/prisma.service';
 import { DocumentProcessingService } from './document-processing.service';
 import { EmbeddingService } from './embedding.service';
 import { AiGatewayService } from '../ai-gateway/ai-gateway.service';
 import { StorageService } from '../../common/services';
 import { RagChatDto } from './dto';
+import {
+  DOCUMENT_PROCESSING_QUEUE,
+  DocumentProcessingJobData,
+} from './document-processing.processor';
 
 export interface DocumentUploadParams {
   title: string;
@@ -33,6 +39,8 @@ export class RagService implements OnModuleInit {
     private readonly embeddingService: EmbeddingService,
     private readonly aiGatewayService: AiGatewayService,
     private readonly storageService: StorageService,
+    @InjectQueue(DOCUMENT_PROCESSING_QUEUE)
+    private readonly documentQueue: Queue<DocumentProcessingJobData>,
   ) {}
 
   async onModuleInit() {
@@ -72,11 +80,30 @@ export class RagService implements OnModuleInit {
       },
     });
 
-    this.processDocument(document.id, tenantId).catch((error) => {
-      this.logger.error(
-        `Background processing failed for document ${document.id}: ${(error as Error).message}`,
+    try {
+      await this.documentQueue.add(
+        'process',
+        { documentId: document.id, tenantId },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: 100,
+          removeOnFail: 50,
+        },
       );
-    });
+      this.logger.log(
+        `Document ${document.id} queued for async processing`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Queue unavailable, falling back to sync processing: ${(error as Error).message}`,
+      );
+      this.processDocument(document.id, tenantId).catch((err) => {
+        this.logger.error(
+          `Background processing failed for document ${document.id}: ${(err as Error).message}`,
+        );
+      });
+    }
 
     return document;
   }
@@ -311,11 +338,27 @@ export class RagService implements OnModuleInit {
       data: { status: 'PENDING', totalChunks: 0, errorMessage: null },
     });
 
-    this.processDocument(id, tenantId).catch((error) => {
-      this.logger.error(
-        `Reprocessing failed for document ${id}: ${(error as Error).message}`,
+    try {
+      await this.documentQueue.add(
+        'reprocess',
+        { documentId: id, tenantId },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: 100,
+          removeOnFail: 50,
+        },
       );
-    });
+    } catch (error) {
+      this.logger.warn(
+        `Queue unavailable, falling back to sync reprocessing: ${(error as Error).message}`,
+      );
+      this.processDocument(id, tenantId).catch((err) => {
+        this.logger.error(
+          `Reprocessing failed for document ${id}: ${(err as Error).message}`,
+        );
+      });
+    }
 
     return { message: 'Document reprocessing started' };
   }
