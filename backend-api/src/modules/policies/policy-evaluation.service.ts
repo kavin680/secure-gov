@@ -39,6 +39,18 @@ interface SensitiveDataRules {
   patterns: string[];
 }
 
+interface RateLimitRules {
+  maxRequests: number;
+  windowSeconds: number;
+  scope?: 'user' | 'tenant';
+}
+
+interface UsageQuotaRules {
+  maxTokens?: number;
+  maxRequests?: number;
+  period: 'daily' | 'weekly' | 'monthly';
+}
+
 @Injectable()
 export class PolicyEvaluationService {
   private readonly logger = new Logger(PolicyEvaluationService.name);
@@ -63,7 +75,7 @@ export class PolicyEvaluationService {
     }
 
     for (const policy of policies) {
-      const result = this.evaluatePolicy(policy, context);
+      const result = await this.evaluatePolicy(policy, context);
 
       if (result) {
         await this.logPolicyDecision(policy, context, result);
@@ -78,7 +90,7 @@ export class PolicyEvaluationService {
     };
   }
 
-  private evaluatePolicy(
+  private async evaluatePolicy(
     policy: {
       id: string;
       name: string;
@@ -87,7 +99,7 @@ export class PolicyEvaluationService {
       action: string;
     },
     context: EvaluationContext,
-  ): PolicyEvaluationResult | null {
+  ): Promise<PolicyEvaluationResult | null> {
     const rules = policy.rules as Record<string, unknown>;
 
     switch (policy.type as PolicyType) {
@@ -113,6 +125,18 @@ export class PolicyEvaluationService {
         return this.evaluateSensitiveData(
           policy,
           rules as unknown as SensitiveDataRules,
+          context,
+        );
+      case PolicyType.RATE_LIMIT:
+        return this.evaluateRateLimit(
+          policy,
+          rules as unknown as RateLimitRules,
+          context,
+        );
+      case PolicyType.USAGE_QUOTA:
+        return this.evaluateUsageQuota(
+          policy,
+          rules as unknown as UsageQuotaRules,
           context,
         );
       case PolicyType.CUSTOM:
@@ -213,6 +237,115 @@ export class PolicyEvaluationService {
         }
       } catch {
         this.logger.warn(`Invalid regex pattern in policy: ${pattern}`);
+      }
+    }
+
+    return null;
+  }
+
+  private async evaluateRateLimit(
+    policy: { id: string; name: string; action: string },
+    rules: RateLimitRules,
+    context: EvaluationContext,
+  ): Promise<PolicyEvaluationResult | null> {
+    if (!rules.maxRequests || !rules.windowSeconds) return null;
+
+    const windowStart = new Date(
+      Date.now() - rules.windowSeconds * 1000,
+    );
+
+    const scope = rules.scope || 'user';
+    const where: Record<string, unknown> = {
+      tenantId: context.tenantId,
+      createdAt: { gte: windowStart },
+    };
+
+    if (scope === 'user' && context.userId) {
+      where.userId = context.userId;
+    }
+
+    const requestCount = await this.prisma.aiLog.count({ where });
+
+    if (requestCount >= rules.maxRequests) {
+      return this.buildResult(policy, PolicyType.RATE_LIMIT, {
+        reason: `Rate limit exceeded: ${requestCount}/${rules.maxRequests} requests in ${rules.windowSeconds}s window`,
+        matchedRule: {
+          maxRequests: rules.maxRequests,
+          windowSeconds: rules.windowSeconds,
+          currentCount: requestCount,
+          scope,
+          type: 'rate_limit',
+        },
+      });
+    }
+
+    return null;
+  }
+
+  private async evaluateUsageQuota(
+    policy: { id: string; name: string; action: string },
+    rules: UsageQuotaRules,
+    context: EvaluationContext,
+  ): Promise<PolicyEvaluationResult | null> {
+    if (!rules.period) return null;
+    if (!rules.maxTokens && !rules.maxRequests) return null;
+
+    const now = new Date();
+    let periodStart: Date;
+
+    switch (rules.period) {
+      case 'daily':
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'weekly': {
+        const day = now.getDay();
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+        break;
+      }
+      case 'monthly':
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      default:
+        return null;
+    }
+
+    const where = {
+      tenantId: context.tenantId,
+      createdAt: { gte: periodStart },
+      status: 'SUCCESS' as const,
+    };
+
+    if (rules.maxRequests) {
+      const requestCount = await this.prisma.aiLog.count({ where });
+      if (requestCount >= rules.maxRequests) {
+        return this.buildResult(policy, PolicyType.USAGE_QUOTA, {
+          reason: `${rules.period} request quota exceeded: ${requestCount}/${rules.maxRequests}`,
+          matchedRule: {
+            maxRequests: rules.maxRequests,
+            currentCount: requestCount,
+            period: rules.period,
+            type: 'usage_quota',
+          },
+        });
+      }
+    }
+
+    if (rules.maxTokens) {
+      const tokenUsage = await this.prisma.aiLog.aggregate({
+        where,
+        _sum: { totalTokens: true },
+      });
+      const totalTokens = tokenUsage._sum.totalTokens ?? 0;
+      if (totalTokens >= rules.maxTokens) {
+        return this.buildResult(policy, PolicyType.USAGE_QUOTA, {
+          reason: `${rules.period} token quota exceeded: ${totalTokens}/${rules.maxTokens}`,
+          matchedRule: {
+            maxTokens: rules.maxTokens,
+            currentTokens: totalTokens,
+            period: rules.period,
+            type: 'usage_quota',
+          },
+        });
       }
     }
 
