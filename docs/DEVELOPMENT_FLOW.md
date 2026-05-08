@@ -144,7 +144,7 @@ This document tracks the development progress of the **Secure Multi-Tenant AI Go
 - [x] Swagger/OpenAPI auto-generated docs
 - [x] Husky + lint-staged (pre-commit hooks)
 - [x] ESLint + Prettier configuration
-- [x] GitHub Actions CI/CD pipeline (lint, test, build)
+- [ ] GitHub Actions CI/CD pipeline (lint, test, build) — workflow file created but requires `workflow` OAuth scope to push
 
 ---
 
