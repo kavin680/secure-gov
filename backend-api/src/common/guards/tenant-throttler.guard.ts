@@ -1,5 +1,5 @@
 import { Injectable, ExecutionContext, Logger } from '@nestjs/common';
-import { ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaService } from '../../database/prisma.service';
 
 const TIER_RATE_LIMITS: Record<string, { ttl: number; limit: number }> = {
