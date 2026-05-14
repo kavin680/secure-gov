@@ -6,16 +6,23 @@ import {
   buildPaginatedResult,
   buildPrismaQueryOptions,
 } from '../../common/utils/pagination.util';
+import { NotificationsGateway } from './notifications.gateway';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gateway: NotificationsGateway,
+  ) {}
 
   async create(dto: CreateNotificationDto) {
     const notification = await this.prisma.notification.create({ data: dto });
     this.logger.log(`Notification created for user ${dto.userId}: ${dto.type}`);
+
+    this.gateway.sendToUser(dto.userId, 'notification', notification);
+
     return notification;
   }
 

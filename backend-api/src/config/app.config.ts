@@ -11,4 +11,13 @@ export default registerAs('app', () => ({
   corsOrigins: process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',')
     : ['http://localhost:3001'],
+
+  // Storage
+  storageType: process.env.STORAGE_TYPE || 'local',
+  uploadDir: process.env.UPLOAD_DIR || './uploads',
+  s3Bucket: process.env.S3_BUCKET || '',
+  s3Region: process.env.S3_REGION || 'us-east-1',
+  s3AccessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+  s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+  s3CdnUrl: process.env.S3_CDN_URL || '',
 }));

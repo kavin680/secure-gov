@@ -207,6 +207,16 @@ export class AuthController {
     return this.authService.verifyEmail(dto.token);
   }
 
+  @Public()
+  @Post('resend-verification')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend email verification' })
+  @ApiResponse({ status: 200, description: 'Verification email sent if account exists' })
+  resendVerification(@Body() dto: ForgotPasswordDto) {
+    return this.authService.resendVerificationEmail(dto.email);
+  }
+
   @Get('sessions')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get active sessions' })

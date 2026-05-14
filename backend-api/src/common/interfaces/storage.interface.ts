@@ -9,4 +9,5 @@ export interface StorageResult {
   filename: string;
   storageKey: string;
   storageType: string;
+  url?: string;
 }

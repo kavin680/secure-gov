@@ -10,13 +10,14 @@ datasource db {
 // ─── Tenant Model ───────────────────────────────────────────────────────────────
 
 model Tenant {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   name        String
-  slug        String   @unique
+  slug        String     @unique
   description String?
-  isActive    Boolean  @default(true) @map("is_active")
+  isActive    Boolean    @default(true) @map("is_active")
   settings    Json?
-  maxUsers    Int      @default(50) @map("max_users")
+  maxUsers    Int        @default(50) @map("max_users")
+  tier        TenantTier @default(FREE)
 
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -416,4 +417,11 @@ enum AiRequestStatus {
   FAILED
   DENIED
   RATE_LIMITED
+}
+
+enum TenantTier {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
 }

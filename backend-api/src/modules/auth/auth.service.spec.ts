@@ -11,6 +11,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Role } from '../../common/enums';
+import { MailService } from '../mail/mail.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -45,9 +46,15 @@ describe('AuthService', () => {
         'auth.jwtRefreshSecret': 'test-refresh-secret',
         'auth.jwtRefreshExpiresIn': '7d',
         'auth.passwordResetTokenExpiresIn': 3600,
+        'auth.emailVerificationEnabled': false,
       };
       return config[key];
     }),
+  };
+
+  const mockMailService = {
+    sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+    sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -59,6 +66,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: MailService, useValue: mockMailService },
       ],
     }).compile();
 
