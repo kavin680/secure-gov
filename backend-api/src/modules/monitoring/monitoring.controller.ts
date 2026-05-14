@@ -19,7 +19,7 @@ import { MonitoringService } from './monitoring.service';
 
 @ApiTags('Monitoring & Analytics')
 @ApiBearerAuth()
-@Controller('api/v1/monitoring')
+@Controller('monitoring')
 export class MonitoringController {
   constructor(private readonly monitoringService: MonitoringService) {}
 
