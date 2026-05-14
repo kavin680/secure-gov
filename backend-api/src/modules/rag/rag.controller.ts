@@ -26,7 +26,7 @@ import { UploadDocumentDto, SearchQueryDto, RagChatDto } from './dto';
 
 @ApiTags('RAG - Document Intelligence')
 @ApiBearerAuth()
-@Controller('api/v1/rag')
+@Controller('rag')
 export class RagController {
   constructor(private readonly ragService: RagService) {}
 
