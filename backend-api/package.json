@@ -35,6 +35,7 @@
     "seed": "ts-node src/database/seeds/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1046.0",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/cache-manager": "^3.1.2",
     "@nestjs/common": "^11.0.1",
@@ -44,11 +45,15 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.19",
+    "@nestjs/platform-socket.io": "^11.1.21",
     "@nestjs/serve-static": "^5.0.5",
     "@nestjs/swagger": "^11.4.2",
     "@nestjs/terminus": "^11.1.1",
     "@nestjs/throttler": "^6.5.0",
+    "@nestjs/websockets": "^11.1.21",
     "@prisma/client": "^5.22.0",
+    "@sentry/nestjs": "^10.53.1",
+    "@sentry/node": "^10.53.1",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.76.4",
     "cache-manager": "^7.2.8",
@@ -74,6 +79,7 @@
     "prisma": "^5.22.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3",
     "uuid": "^14.0.0"
   },
   "devDependencies": {
