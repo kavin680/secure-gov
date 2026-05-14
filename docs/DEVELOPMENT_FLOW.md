@@ -166,11 +166,11 @@ This document tracks the development progress of the **Secure Multi-Tenant AI Go
 - [x] Query helper unit tests
 - [x] Policy evaluation service unit tests
 - [x] AI Gateway service unit tests
-- [ ] Tenants service unit tests
-- [ ] RAG service unit tests
-- [ ] Monitoring service unit tests
+- [x] Tenants service unit tests
+- [x] RAG service unit tests
+- [x] Monitoring service unit tests
 - [ ] E2E integration tests
-- [ ] Test coverage reporting
+- [x] Test coverage reporting (jest --coverage)
 
 ---
 
