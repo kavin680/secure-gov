@@ -91,9 +91,7 @@ export class RagService implements OnModuleInit {
           removeOnFail: 50,
         },
       );
-      this.logger.log(
-        `Document ${document.id} queued for async processing`,
-      );
+      this.logger.log(`Document ${document.id} queued for async processing`);
     } catch (error) {
       this.logger.warn(
         `Queue unavailable, falling back to sync processing: ${(error as Error).message}`,

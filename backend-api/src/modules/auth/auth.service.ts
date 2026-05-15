@@ -372,7 +372,10 @@ export class AuthService {
     });
 
     if (!user || user.isEmailVerified) {
-      return { message: 'If an unverified account exists, a verification email will be sent' };
+      return {
+        message:
+          'If an unverified account exists, a verification email will be sent',
+      };
     }
 
     const token = generateToken();
@@ -384,7 +387,10 @@ export class AuthService {
     await this.mailService.sendVerificationEmail(user.email, token);
     this.logger.log(`Verification email resent for: ${user.email}`);
 
-    return { message: 'If an unverified account exists, a verification email will be sent' };
+    return {
+      message:
+        'If an unverified account exists, a verification email will be sent',
+    };
   }
 
   async getActiveSessions(userId: string) {
