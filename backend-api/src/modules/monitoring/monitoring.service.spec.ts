@@ -258,7 +258,7 @@ describe('MonitoringService', () => {
 
       const result = await service.getTenantReport('tenant-1');
 
-      expect(result.tenant.name).toBe('Acme Corp');
+      expect(result.tenant!.name).toBe('Acme Corp');
       expect(result.stats.users).toBe(5);
       expect(result.stats.policies).toBe(3);
       expect(result.stats.documents).toBe(2);
