@@ -24,6 +24,7 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
 } from './dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +34,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -62,6 +64,16 @@ export class AuthService {
     });
 
     this.logger.log(`User registered: ${user.email}`);
+
+    if (
+      this.configService.get<boolean>('auth.emailVerificationEnabled') &&
+      emailVerificationToken
+    ) {
+      await this.mailService.sendVerificationEmail(
+        user.email,
+        emailVerificationToken,
+      );
+    }
 
     return {
       message: 'Registration successful. Please verify your email.',
@@ -288,7 +300,7 @@ export class AuthService {
       },
     });
 
-    // TODO: Send email with reset link via MailModule
+    await this.mailService.sendPasswordResetEmail(user.email, token);
     this.logger.log(`Password reset requested for: ${user.email}`);
 
     return {
@@ -352,6 +364,33 @@ export class AuthService {
 
     this.logger.log(`Email verified for: ${user.email}`);
     return { message: 'Email verified successfully' };
+  }
+
+  async resendVerificationEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user || user.isEmailVerified) {
+      return {
+        message:
+          'If an unverified account exists, a verification email will be sent',
+      };
+    }
+
+    const token = generateToken();
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerificationToken: token },
+    });
+
+    await this.mailService.sendVerificationEmail(user.email, token);
+    this.logger.log(`Verification email resent for: ${user.email}`);
+
+    return {
+      message:
+        'If an unverified account exists, a verification email will be sent',
+    };
   }
 
   async getActiveSessions(userId: string) {

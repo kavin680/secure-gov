@@ -144,7 +144,7 @@ This document tracks the development progress of the **Secure Multi-Tenant AI Go
 - [x] Swagger/OpenAPI auto-generated docs
 - [x] Husky + lint-staged (pre-commit hooks)
 - [x] ESLint + Prettier configuration
-- [ ] GitHub Actions CI/CD pipeline (lint, test, build) — workflow file created but requires `workflow` OAuth scope to push
+- [ ] GitHub Actions CI/CD pipeline — workflow file exists locally but requires `workflow` OAuth scope to push
 
 ---
 
@@ -166,11 +166,11 @@ This document tracks the development progress of the **Secure Multi-Tenant AI Go
 - [x] Query helper unit tests
 - [x] Policy evaluation service unit tests
 - [x] AI Gateway service unit tests
-- [ ] Tenants service unit tests
-- [ ] RAG service unit tests
-- [ ] Monitoring service unit tests
+- [x] Tenants service unit tests
+- [x] RAG service unit tests
+- [x] Monitoring service unit tests
 - [ ] E2E integration tests
-- [ ] Test coverage reporting
+- [x] Test coverage reporting (jest --coverage)
 
 ---
 
@@ -201,14 +201,14 @@ This document tracks the development progress of the **Secure Multi-Tenant AI Go
 
 ---
 
-## Phase 12: Production Readiness (Future)
+## Phase 12: Production Readiness
 
-- [ ] Cloud deployment (AWS/GCP/Azure)
-- [ ] Managed PostgreSQL with pgvector
-- [ ] Managed Redis
-- [ ] S3/cloud file storage integration
-- [ ] Log aggregation (Datadog/Sentry)
-- [ ] WebSocket real-time notifications
-- [ ] Email verification flow
-- [ ] Password reset flow
-- [ ] API rate limiting per tenant tier
+- [x] Cloud deployment configuration (Docker Compose production, .env.production.example)
+- [x] Managed PostgreSQL with pgvector (connection string config, pgvector Docker image)
+- [x] Managed Redis (ElastiCache/Memorystore connection config)
+- [x] S3/cloud file storage integration (S3StorageService with CDN support)
+- [x] Log aggregation — Sentry error tracking + Datadog APM (ObservabilityModule)
+- [x] WebSocket real-time notifications (Socket.IO gateway with JWT auth, room-based routing)
+- [x] Email verification flow (MailService wired to register + resend endpoint)
+- [x] Password reset flow (MailService wired to forgotPassword)
+- [x] API rate limiting per tenant tier (FREE/STARTER/PROFESSIONAL/ENTERPRISE with TenantThrottlerGuard)

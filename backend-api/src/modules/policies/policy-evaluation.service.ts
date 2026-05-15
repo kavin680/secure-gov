@@ -250,9 +250,7 @@ export class PolicyEvaluationService {
   ): Promise<PolicyEvaluationResult | null> {
     if (!rules.maxRequests || !rules.windowSeconds) return null;
 
-    const windowStart = new Date(
-      Date.now() - rules.windowSeconds * 1000,
-    );
+    const windowStart = new Date(Date.now() - rules.windowSeconds * 1000);
 
     const scope = rules.scope || 'user';
     const where: Record<string, unknown> = {
@@ -295,11 +293,19 @@ export class PolicyEvaluationService {
 
     switch (rules.period) {
       case 'daily':
-        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        periodStart = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+        );
         break;
       case 'weekly': {
         const day = now.getDay();
-        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+        periodStart = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - day,
+        );
         break;
       }
       case 'monthly':

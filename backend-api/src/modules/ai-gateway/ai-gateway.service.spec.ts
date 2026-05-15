@@ -140,9 +140,9 @@ describe('AiGatewayService', () => {
         reason: 'Blocked keyword detected',
       });
 
-      await expect(
-        service.chat(chatDto, 'user-1', 'tenant-1'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.chat(chatDto, 'user-1', 'tenant-1')).rejects.toThrow(
+        ForbiddenException,
+      );
 
       expect(mockMockProvider.chat).not.toHaveBeenCalled();
     });
@@ -175,9 +175,9 @@ describe('AiGatewayService', () => {
         provider: 'unknown-provider',
       };
 
-      await expect(
-        service.chat(dto, 'user-1', 'tenant-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.chat(dto, 'user-1', 'tenant-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should detect OpenAI provider from model name', async () => {
@@ -216,9 +216,9 @@ describe('AiGatewayService', () => {
 
       mockPrisma.apiKey.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.chat(dto, 'user-1', 'tenant-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.chat(dto, 'user-1', 'tenant-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should not require API key for mock provider', async () => {
@@ -238,13 +238,11 @@ describe('AiGatewayService', () => {
     });
 
     it('should handle AI provider errors', async () => {
-      mockMockProvider.chat.mockRejectedValue(
-        new Error('Provider timeout'),
-      );
+      mockMockProvider.chat.mockRejectedValue(new Error('Provider timeout'));
 
-      await expect(
-        service.chat(chatDto, 'user-1', 'tenant-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.chat(chatDto, 'user-1', 'tenant-1')).rejects.toThrow(
+        BadRequestException,
+      );
 
       expect(mockPrisma.aiLog.create).toHaveBeenCalledWith({
         data: expect.objectContaining({

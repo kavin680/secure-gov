@@ -40,6 +40,7 @@ import { AiGatewayModule } from './modules/ai-gateway/ai-gateway.module';
 import { RagModule } from './modules/rag/rag.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { QueueConfigModule } from './modules/queue/queue.module';
+import { ObservabilityModule } from './modules/observability/observability.module';
 
 // Common
 import { JwtAuthGuard } from './modules/auth/guards';
@@ -84,6 +85,9 @@ import { RequestIdMiddleware } from './common/middleware';
     QueueConfigModule.register(),
     AppLoggerModule,
     MailModule,
+
+    // Observability
+    ObservabilityModule,
 
     // Feature modules
     AuthModule,

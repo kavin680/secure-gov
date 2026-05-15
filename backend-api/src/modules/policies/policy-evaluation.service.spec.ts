@@ -492,11 +492,7 @@ describe('PolicyEvaluationService', () => {
 
     it('should return RATE_LIMITED decision for RATE_LIMIT action', async () => {
       mockPrisma.policy.findMany.mockResolvedValue([
-        makePolicy(
-          'KEYWORD_BLOCK',
-          { keywords: ['test'] },
-          'RATE_LIMIT',
-        ),
+        makePolicy('KEYWORD_BLOCK', { keywords: ['test'] }, 'RATE_LIMIT'),
       ]);
 
       const result = await service.evaluate({
